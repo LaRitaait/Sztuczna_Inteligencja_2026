@@ -1,2 +1,3 @@
-#  **Sztuczna_Inteligencja_2026**
-**Autorzy:** 21234, 21469, 21265
+#  **Sztuczna Inteligencja**
+**Autorzy:** Zofia Głowacka 21234, Artur Nieżurawski 21469, Michał Mazurek 21265
+**Rok akademicki:** 2025/2026
