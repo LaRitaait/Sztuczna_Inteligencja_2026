@@ -3,10 +3,13 @@ import random
 
 records = []
 
-for _ in range(100000):
+for i in range(1, 100001):
     size = round(random.uniform(0.01, 5.0), 3)
-    weight = round(random.uniform(0.1, 1.5), 3)
-    records.append([size, weight])  # LISTA zamiast set
+    weight_tons = round(random.uniform(0.1, 1.5), 3)
+    weight_kg = round(weight_tons * 1000, 3)  # zamiana ton na kilogramy
+
+    record = f"{i} {size} {weight_kg}"
+    records.append(record)
 
 with open("paczki.json", "w") as f:
-    json.dump(records, f)
+    json.dump(records, f, ensure_ascii=False, indent=2)
