@@ -8,3 +8,4 @@
 - przestrzeń zajmowana przez paczki musi być jak najbliższa połowy maksymalnej przestrzeni ładunkowej pojazdu,
 - maksymalny udźwig przewożonych paczek wynosi 1500kg,
 - ilość paczek wynosi 100000.
+https://mybinder.org/v2/gh/LaRitaait/Sztuczna_Inteligencja_2026/blob/main/Interfejs.py/HEAD
