@@ -1,27 +1,26 @@
+# generator.py
 import json
 import random
 
-records = []
 
-MAX_WEIGHT_G = 31500  # 31.5 kg w gramach
-MAX_DENSITY = 10      # g/cm^3
+def generuj_dane(nazwa_pliku="paczki_hs.json", ilosc=100000):
+    print(f"Generowanie {ilosc} paczek...")
+    paczki = {}
 
-for i in range(1, 100001):
-    # Objętość w cm³ (liczba całkowita)
-    volume_cm3 = random.randint(600, 99712)
+    for i in range(1, ilosc + 1):
+        # Generujemy paczki o zróżnicowanej wadze (np. od 1 do 50 kg)
+        # i objętości (np. od 10 000 do 100 000 cm3)
+        waga = round(random.uniform(1.0, 50.0), 2)
+        objetosc = round(random.uniform(10000.0, 100000.0), 2)
 
-    # Maksymalna masa wynikająca z ograniczenia gęstości (10 g/cm^3)
-    max_mass_from_density = volume_cm3 * MAX_DENSITY
+        # Zapisujemy w formacie słownika, gdzie kluczem jest ID
+        paczki[i] = {"waga": waga, "objetosc": objetosc}
 
-    # Rzeczywisty maksymalny zakres masy: nie więcej niż 31 500 g
-    max_mass_possible = min(MAX_WEIGHT_G, max_mass_from_density)
+    with open(nazwa_pliku, 'w', encoding='utf-8') as f:
+        json.dump(paczki, f, indent=2)
 
-    # Masa w gramach (liczba całkowita, co najmniej 1 g)
-    mass_g = random.randint(1, max_mass_possible)
+    print(f"Zapisano do pliku {nazwa_pliku}")
 
-    # Format: ID objętość masa
-    record = f"{i} {volume_cm3} {mass_g}"
-    records.append(record)
 
-with open("paczki.json", "w") as f:
-    json.dump(records, f, ensure_ascii=False, indent=2)
+if __name__ == "__main__":
+    generuj_dane()
