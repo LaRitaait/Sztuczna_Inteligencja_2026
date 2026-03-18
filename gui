@@ -1,0 +1,199 @@
+# gui.py
+import tkinter as tk
+from tkinter import ttk, messagebox
+import threading
+import queue
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import algorytm_harmoniczny as ah
+import generator
+
+
+class HarmonyGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Algorytm Harmoniczny - Optymalizacja Załadunku na żywo")
+        self.root.geometry("900x650")
+
+        # Stan działania
+        self.dziala = False
+        self.kolejka_danych = queue.Queue()
+        self.historia_x = []
+        self.historia_y = []
+
+        # Podział na panele
+        self.panel_lewy = ttk.Frame(self.root, width=320, padding=10)
+        self.panel_lewy.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.panel_prawy = ttk.Frame(self.root, padding=10)
+        self.panel_prawy.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        # 1. POLA PARAMETRÓW
+        frame_parametry = ttk.LabelFrame(self.panel_lewy, text="Parametry Algorytmu i Ograniczenia", padding=5)
+        frame_parametry.pack(fill=tk.X, pady=5)
+
+        # Zmienne przechowujące wartości z GUI
+        self.v_ni = tk.IntVar(value=100000)
+        self.v_hms = tk.IntVar(value=20)
+        self.v_hmcr = tk.DoubleVar(value=0.85)
+        self.v_par = tk.DoubleVar(value=0.10)
+        self.v_max_weight = tk.DoubleVar(value=1500.0)
+        self.v_max_volume = tk.DoubleVar(value=2500000.0)
+        self.v_min_pack = tk.IntVar(value=10)
+        self.v_max_pack = tk.IntVar(value=50)
+
+        # Tworzenie siatki (Grid) dla pól
+        pola = [
+            ("Liczba Iteracji:", self.v_ni),
+            ("Pamięć Harmonii (HMS):", self.v_hms),
+            ("Prawdopod. Pamięci (HMCR):", self.v_hmcr),
+            ("Dostrojenie (PAR):", self.v_par),
+            ("Max Waga (kg):", self.v_max_weight),
+            ("Max Objętość (cm3):", self.v_max_volume),
+            ("Min Liczba Paczek:", self.v_min_pack),
+            ("Max Liczba Paczek:", self.v_max_pack)
+        ]
+
+        for i, (etykieta, zmienna) in enumerate(pola):
+            ttk.Label(frame_parametry, text=etykieta).grid(row=i, column=0, sticky=tk.W, pady=2)
+            ttk.Entry(frame_parametry, textvariable=zmienna, width=12).grid(row=i, column=1, pady=2, padx=5)
+
+        # 2. PRZYCISKI
+        ttk.Button(self.panel_lewy, text="1. Generuj Nowe Dane (100k)", command=self.generuj_dane).pack(fill=tk.X,
+                                                                                                        pady=10)
+        self.btn_uruchom = ttk.Button(self.panel_lewy, text="2. Uruchom Algorytm", command=self.uruchom_w_tle)
+        self.btn_uruchom.pack(fill=tk.X, pady=5)
+
+        self.label_status = ttk.Label(self.panel_lewy, text="Gotowy", font=("Arial", 10, "bold"), foreground="green")
+        self.label_status.pack(pady=5)
+
+        # 3. WYNIKI TEKSTOWE
+        self.text_wynik = tk.Text(self.panel_lewy, width=35, height=15, state=tk.DISABLED)
+        self.text_wynik.pack(fill=tk.BOTH, expand=True)
+
+        # 4. WYKRES (Prawy panel)
+        self.figura = Figure(figsize=(5, 4), dpi=100)
+        self.os_wykresu = self.figura.add_subplot(111)
+        self.os_wykresu.set_title("Wzrost Fitness w czasie")
+        self.os_wykresu.set_xlabel("Iteracje")
+        self.os_wykresu.set_ylabel("Fitness (Jakość)")
+        self.linia_wykresu, = self.os_wykresu.plot([], [], color='blue', linewidth=2)
+
+        self.plot_canvas = FigureCanvasTkAgg(self.figura, self.panel_prawy)
+        self.plot_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+    def generuj_dane(self):
+        self.label_status.config(text="Generowanie danych...", foreground="blue")
+        self.root.update()
+        generator.generuj_dane()
+        self.label_status.config(text="Wygenerowano paczki!", foreground="green")
+        messagebox.showinfo("Sukces", "Wygenerowano 100 000 paczek.")
+
+    def uruchom_w_tle(self):
+        # Blokada przycisku i status
+        self.btn_uruchom.config(state=tk.DISABLED)
+        self.label_status.config(text="Obliczenia trwają...", foreground="red")
+
+        # Reset flagi i historii
+        self.dziala = True
+        self.historia_x.clear()
+        self.historia_y.clear()
+
+        # Czyszczenie starych śmieci z kolejki
+        while not self.kolejka_danych.empty():
+            self.kolejka_danych.get_nowait()
+
+        # Rysowanie pustego wykresu ze sztywnymi osiami na start
+        self.os_wykresu.clear()
+        self.os_wykresu.set_title("Wzrost Fitness na żywo")
+        self.os_wykresu.set_xlim(0, self.v_ni.get())  # X od 0 do liczby wpisanych iteracji
+        self.os_wykresu.set_ylim(0, 1500)  # Y sztywno od 0 do 1500
+        self.os_wykresu.set_xlabel("Iteracje")
+        self.os_wykresu.set_ylabel("Fitness (Jakość)")
+        self.plot_canvas.draw()
+
+        # Uruchomienie pętli sprawdzającej kolejkę co 100 ms
+        self.root.after(100, self.aktualizuj_wykres)
+
+        # Start algorytmu w osobnym wątku
+        thread = threading.Thread(target=self.wykonaj_algorytm)
+        thread.start()
+
+    def aktualizuj_wykres(self):
+        czy_nowe_dane = False
+
+        # Pobranie wszystkich paczek z danymi (co 1000 iteracji z algorytmu)
+        while not self.kolejka_danych.empty():
+            it, fit = self.kolejka_danych.get_nowait()
+            self.historia_x.append(it)
+            self.historia_y.append(fit)
+            czy_nowe_dane = True
+
+        # Jeśli przyszły nowe dane, przerysuj wykres trzymając sztywne ramy
+        if czy_nowe_dane:
+            self.os_wykresu.clear()
+            self.os_wykresu.set_title("Wzrost Fitness na żywo")
+            self.os_wykresu.set_xlim(0, self.v_ni.get())
+            self.os_wykresu.set_ylim(0, 1600)
+            self.os_wykresu.set_xlabel("Iteracje")
+            self.os_wykresu.set_ylabel("Fitness (Jakość)")
+
+            # Rysujemy zebraną historię
+            self.os_wykresu.plot(self.historia_x, self.historia_y, color='blue', linewidth=2)
+            self.plot_canvas.draw()
+
+        # Jeśli algorytm wciąż działa, sprawdź ponownie za 100 ms
+        if self.dziala:
+            self.root.after(100, self.aktualizuj_wykres)
+
+    def wykonaj_algorytm(self):
+        try:
+            # Pobranie zmiennych wpisanych przez użytkownika
+            p_ni = self.v_ni.get()
+            p_hms = self.v_hms.get()
+            p_hmcr = self.v_hmcr.get()
+            p_par = self.v_par.get()
+            p_mw = self.v_max_weight.get()
+            p_mv = self.v_max_volume.get()
+            p_minp = self.v_min_pack.get()
+            p_maxp = self.v_max_pack.get()
+
+            # Przekazujemy wszystkie parametry + kolejkę do rysowania na żywo
+            najlepsze_rozwiazanie = ah.uruchom_hs(
+                ni=p_ni, hms=p_hms, hmcr=p_hmcr, par=p_par,
+                max_weight=p_mw, max_volume=p_mv,
+                min_pack=p_minp, max_pack=p_maxp,
+                kolejka=self.kolejka_danych
+            )
+
+            self.dziala = False  # Zatrzymujemy odświeżanie wykresu
+            self.root.after(100, self.pokaz_wyniki, najlepsze_rozwiazanie)
+
+        except Exception as e:
+            self.dziala = False
+            self.root.after(0, lambda: messagebox.showerror("Błąd", str(e)))
+            self.root.after(0, lambda: self.btn_uruchom.config(state=tk.NORMAL))
+
+    def pokaz_wyniki(self, najlepsze):
+        self.label_status.config(text="Zakończono sukcesem!", foreground="green")
+        self.btn_uruchom.config(state=tk.NORMAL)
+
+        self.text_wynik.config(state=tk.NORMAL)
+        self.text_wynik.delete(1.0, tk.END)
+        self.text_wynik.insert(tk.END, f"--- NAJLEPSZY WYNIK ---\n")
+        self.text_wynik.insert(tk.END, f"Fitness: {najlepsze['fitness']:.2f}\n")
+        self.text_wynik.insert(tk.END, f"Waga: {najlepsze['waga']:.2f} kg\n")
+        self.text_wynik.insert(tk.END, f"Objętość: {najlepsze['objetosc']:.2f} cm3\n")
+        self.text_wynik.insert(tk.END, f"Liczba paczek: {najlepsze['ilosc']}\n\n")
+
+        paczki_ostateczne = list(set([p for p in najlepsze["wektor"] if p != 0]))
+        self.text_wynik.insert(tk.END, f"Użyte ID paczek:\n{paczki_ostateczne}")
+        self.text_wynik.config(state=tk.DISABLED)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HarmonyGUI(root)
+    root.mainloop()
