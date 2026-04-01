@@ -41,7 +41,7 @@ def ocena_fitness(wektor_rozwiazania, baza_paczek, max_weight, max_volume, min_p
     punkty_objetosc = (calkowita_objetosc / max_volume) * max_weight
 
     # Wyciągamy średnią. Idealny van ma 1500 z wagi i 1500 z objętości,
-    # więc (1500+1500)/2 = 1500 fitnessu. Twoje wykresy i GUI wciąż będą działać bez zmian!
+    # więc (1500+1500)/2 = 1500 fitnessu
     nagroda = (punkty_waga + punkty_objetosc) / 2.0
 
     # Ostateczny wynik to zbilansowana nagroda minus ewentualne kary
