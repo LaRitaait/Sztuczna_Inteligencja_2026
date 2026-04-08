@@ -4,6 +4,7 @@
 
 ---
 
+## **Projekty**
 [Projekt 1](Projekt_1/)   
 ## **Opis projektu**
 *Cel projektu:* Zapakowanie samochodu w taki sposób, aby zapełnić paczkami jak największą, możliwą przestrzeń ładunkową.  
