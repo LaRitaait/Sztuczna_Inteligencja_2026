@@ -6,7 +6,6 @@
 
 ## **Projekty**
 [Projekt 1](Projekt_1/) 
-[Pobierz Projekt 1](Projekt_1/program.py)  
 
 *Cel projektu:* Zapakowanie samochodu w taki sposób, aby zapełnić paczkami jak największą, możliwą przestrzeń ładunkową.  
 *Wymagania:* 
