@@ -6,7 +6,7 @@
 
 ## **Projekty**
 [Projekt 1](Projekt_1/)   
-## **Opis projektu**
+
 *Cel projektu:* Zapakowanie samochodu w taki sposób, aby zapełnić paczkami jak największą, możliwą przestrzeń ładunkową.  
 *Wymagania:* 
 - przestrzeń zajmowana przez paczki nie może być większa od połowy maksymalnej przestrzeni ładunkowej pojazu (5m3),
