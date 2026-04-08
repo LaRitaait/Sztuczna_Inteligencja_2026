@@ -14,3 +14,5 @@
 - maksymalny udźwig przewożonych paczek wynosi 1500kg,
 - ilość paczek wynosi 100000.
 
+[Projekt 2](Projekt_2/)
+
