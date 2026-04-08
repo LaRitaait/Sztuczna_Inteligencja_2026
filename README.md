@@ -1,6 +1,9 @@
 #  **Sztuczna Inteligencja**
 **Autorzy:** Zofia Głowacka 21234, Artur Nieżurawski 21469, Michał Mazurek 21265  
-**Rok akademicki:** 2025/2026/  
+**Rok akademicki:** 2025/2026
+
+---
+
 [Projekt 1](Projekt_1/)   
 ## **Opis projektu**
 *Cel projektu:* Zapakowanie samochodu w taki sposób, aby zapełnić paczkami jak największą, możliwą przestrzeń ładunkową.  
